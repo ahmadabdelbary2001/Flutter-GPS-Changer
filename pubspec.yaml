@@ -1,0 +1,44 @@
+name: google_maps
+description: "A new Flutter project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_bloc: ^8.1.6
+  cupertino_icons: ^1.0.6
+  location: ^7.0.0
+  google_maps_flutter: ^2.2.8
+  dio: ^5.5.0+1
+  bloc: ^8.1.4
+  geolocator: ^12.0.0
+  shared_preferences: ^2.3.1
+  flutter_background: ^1.2.0
+  flutter_background_service: ^5.0.7
+  # background_locator: ^1.6.12
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+  flutter_lints: ^3.0.0
+
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/images/
+    - assets/map_style/
+
