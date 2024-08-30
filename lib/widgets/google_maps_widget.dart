@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../mock/mock_location_service.dart';
-import '../repositories/map_repository.dart';
-import '../utils/map_utils.dart';
 import '../app_bloc.dart';
 import '../controller/live_location_cubit.dart';
 import 'package:location/location.dart';
+import 'package:provider/provider.dart';
+import '../mock/mock_location_service.dart';
+import '../provider/shared_state.dart';
+import 'route_settings_dialog.dart';
 
 class GoogleMapsWidget extends StatefulWidget {
   const GoogleMapsWidget({super.key});
@@ -18,60 +19,33 @@ class GoogleMapsWidget extends StatefulWidget {
 }
 
 class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
-  final Completer<GoogleMapController> _controller = Completer();
-  static double lat = 35.0;
-  static double lng = 39.0;
-  LatLng? singlePoint;
-  LatLng? initialLatLng;
-  LatLng? destinationLatLng;
+  final Completer<GoogleMapController> _controller =
+      Completer(); // Controller for Google Maps.
 
-  final Set<Marker> _markers = <Marker>{};
-  late BitmapDescriptor customIcon;
-  late BitmapDescriptor blueMarkerIcon;
-  late BitmapDescriptor redMarkerIcon;
-  late BitmapDescriptor greenMarkerIcon;
+  static double lat = 35.0; // Initial latitude value.
+  static double lng = 39.0; // Initial longitude value.
+  LatLng? currentPoint;
+  LatLng? previousPoint;
 
-  bool mapDarkMode = false;
-  bool carSpeed = true;
-  bool isBeginning = false;
-  bool isEnd = false;
-  static bool isMoving = false; //State variable to control visibility
-  bool showPointsType = false;
+  static List<LatLng> polylineCoordinates =
+      []; // List to hold coordinates for the polyline.
+  final Set<Marker> markers = <Marker>{}; // Set to hold map markers.
+  final Set<Polyline> polylines = {}; // Set to hold polylines for routes.
 
-  late String _darkMapStyle;
-  late String _lightMapStyle;
+  bool mapDarkMode = false; // Flag to track dark mode for the map.
+  bool isChanged = false;
+  bool isPlaying = false; // Boolean to track whether location faking is active.
 
-  final Set<Polyline> _polyline = {};
-  List<LatLng> polylineCoordinates = [];
-
-  late MockLocationService _mockLocationService;
+  late String _darkMapStyle; // Variable to hold the dark map style JSON.
+  late String _lightMapStyle; // Variable to hold the light map style JSON.
 
   @override
   void initState() {
-    BitmapDescriptor.asset(const ImageConfiguration(size: Size(50, 50)),
-            'assets/images/marker_car.png')
-        .then((icon) {
-      customIcon = icon;
-    });
-    BitmapDescriptor.asset(const ImageConfiguration(size: Size(50, 50)),
-            'assets/images/marker_blue.png')
-        .then((icon) {
-      blueMarkerIcon = icon;
-    });
-    BitmapDescriptor.asset(const ImageConfiguration(size: Size(50, 50)),
-            'assets/images/marker_red.png')
-        .then((icon) {
-      redMarkerIcon = icon;
-    });
-    BitmapDescriptor.asset(const ImageConfiguration(size: Size(50, 50)),
-            'assets/images/marker_green.png')
-        .then((icon) {
-      greenMarkerIcon = icon;
-    });
-    _loadMapStyles();
+    _loadMapStyles(); // Load map styles (dark and light modes).
     super.initState();
   }
 
+  // Method to load map styles from assets.
   Future _loadMapStyles() async {
     _darkMapStyle = await rootBundle.loadString('assets/map_style/dark.json');
     _lightMapStyle = await rootBundle.loadString('assets/map_style/light.json');
@@ -81,110 +55,63 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     setState(() {
-      _setMapStyle();
+      _setMapStyle(); // Apply the appropriate map style based on the theme.
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(children: [
-      BlocListener<LiveLocationCubit, LocationData?>(
-        listener: (context, liveLocation) {
-          if (liveLocation != null) {
-            _updateUserMarker(liveLocation);
-          }
-        },
-        child: GoogleMap(
-          mapType: MapType.normal,
-          rotateGesturesEnabled: true,
-          zoomGesturesEnabled: true,
-          trafficEnabled: false,
-          tiltGesturesEnabled: false,
-          scrollGesturesEnabled: true,
-          compassEnabled: true,
-          myLocationButtonEnabled: true,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
-          markers: _markers,
-          polylines: _polyline,
-          initialCameraPosition: const CameraPosition(
-            target: LatLng(35.0, 39.0),
-            zoom: 6.2,
-          ),
-          onMapCreated: (GoogleMapController controller) {
-            _controller.complete(controller);
-            //_setMapPins([const LatLng(35, 39.0)]);
-            _setMapStyle();
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHight = MediaQuery.of(context).size.height;
+    return Consumer<SharedState>(builder: (context, sharedState, child) {
+      bool isMoving = sharedState.isMoving;
+      if (isMoving && !isChanged) {
+        isChanged = true;
+        _clearMapData();
+      } else if (!isMoving && isChanged) {
+        isChanged = false;
+        _clearMapData();
+      }
+      return Stack(children: [
+        // BlocListener to listen for live location updates and update the user's marker accordingly.
+        BlocListener<LiveLocationCubit, LocationData?>(
+          listener: (context, liveLocation) {
+            if (liveLocation != null) {
+              _updateUserMarker(liveLocation);
+            }
           },
-          onTap: handleMapTap, // Handle map taps
-        ),
-      ),
-      Container(
-        height: 39,
-        width: 39,
-        margin: const EdgeInsets.only(top: 10.0, left: 350.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15.0),
-          border: Border.all(color: Colors.grey, width: 1.5),
-        ),
-        child: IconButton(
-          icon: Icon(
-            mapDarkMode ? Icons.brightness_5_outlined : Icons.brightness_2,
-            color: Theme.of(context).primaryColor,
-          ),
-          iconSize: 20.0,
-          onPressed: () {
-            setState(() {
-              mapDarkMode = !mapDarkMode;
-              _setMapStyle();
-            });
-          },
-        ),
-      ),
-      Container(
-        height: 39,
-        width: 39,
-        margin: const EdgeInsets.only(top: 10.0, left: 7.5),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15.0),
-          border: Border.all(color: Colors.grey, width: 1.5),
-        ),
-        child: IconButton(
-          onPressed: () {
-            AppBloc.liveLocationCubit.startService();
-          },
-          icon: const Icon(Icons.gps_fixed),
-          color: Theme.of(context).primaryColor,
-          iconSize: 20.0,
-        ),
-      ),
-      if (isMoving) ...[
-        Container(
-          height: 39,
-          width: 39,
-          margin: const EdgeInsets.only(top: 55.0, left: 7.5),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15.0),
-            border: Border.all(color: Colors.grey, width: 1.5),
-          ),
-          child: IconButton(
-            onPressed: () {
-              setState(() {
-                showPointsType = true;
-              });
+          child: GoogleMap(
+            mapType: MapType.normal,
+            rotateGesturesEnabled: true,
+            zoomGesturesEnabled: true,
+            trafficEnabled: false,
+            tiltGesturesEnabled: false,
+            scrollGesturesEnabled: true,
+            compassEnabled: true,
+            myLocationButtonEnabled: true,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            markers: markers,
+            // Display markers on the map.
+            polylines: polylines,
+            // Display polylines on the map.
+            initialCameraPosition: const CameraPosition(
+              target: LatLng(35.0, 39.0),
+              zoom: 6.2,
+            ),
+            onMapCreated: (GoogleMapController controller) {
+              _controller.complete(controller); // Complete the map controller.
+              _setMapStyle(); // Set the initial map style.
             },
-            icon: const Icon(Icons.add),
-            color: Colors.green,
-            iconSize: 20.0,
+            onTap: handleMapTap, // Handle map taps to add markers.
           ),
         ),
+        // UI button to toggle between dark and light map modes.
         Container(
-          height: 39,
-          width: 39,
-          margin: const EdgeInsets.only(top: 55.0, left: 350.0),
+          height: screenHight * 0.045,
+          width: screenWidth * 0.1,
+          margin: EdgeInsets.only(
+              top: screenHight * 0.015, left: screenWidth * 0.89),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(15.0),
@@ -192,26 +119,24 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
           ),
           child: IconButton(
             icon: Icon(
-              carSpeed
-                  ? Icons.directions_car_filled_outlined
-                  : Icons.directions_walk,
-              color: carSpeed ? Colors.red : Colors.green,
+              mapDarkMode ? Icons.brightness_5_outlined : Icons.brightness_2,
+              color: Theme.of(context).primaryColor,
             ),
-            iconSize: 20.0,
+            iconSize: screenHight * 0.0225,
             onPressed: () {
               setState(() {
-                carSpeed = !carSpeed;
-                //
+                mapDarkMode = !mapDarkMode; // Toggle map dark mode.
+                _setMapStyle(); // Apply the selected map style.
               });
             },
           ),
         ),
-      ],
-      if (isBeginning || isEnd) ...[
+        // UI button to start the location service.
         Container(
-          height: 39,
-          width: 39,
-          margin: const EdgeInsets.only(top: 100.0, left: 7.5),
+          height: screenHight * 0.045,
+          width: screenWidth * 0.1,
+          margin: EdgeInsets.only(
+              top: screenHight * 0.015, left: screenWidth * 0.02),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(15.0),
@@ -219,85 +144,142 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
           ),
           child: IconButton(
             onPressed: () {
-              setState(() {
-                if (isEnd) {
-                  destinationLatLng = null;
-                  isEnd = false;
+              AppBloc.liveLocationCubit
+                  .startService(); // Start the location service.
+            },
+            icon: const Icon(Icons.gps_fixed),
+            color: Theme.of(context).primaryColor,
+            iconSize: screenHight * 0.0225,
+          ),
+        ),
+        if (currentPoint != null) ...[
+          Container(
+            height: screenHight * 0.065,
+            width: screenWidth * 0.14,
+            margin: EdgeInsets.only(
+                top: screenHight * 0.835, left: screenWidth * 0.435),
+            decoration: BoxDecoration(
+              color: isPlaying ? Colors.red : Colors.green,
+              // Change color based on isPlaying.,
+              borderRadius: BorderRadius.circular(100.0),
+            ),
+            child: IconButton(
+              //onPressed: () => showRouteSettings(context),
+              onPressed: () {
+                if (isMoving) {
+                  isPlaying
+                    ? MockLocationService().stopFakeLocation()
+                    : showRouteSettings(context);
                 } else {
-                  initialLatLng = null;
-                  isBeginning = false;
+                  // Toggle between starting and stopping the location faking.
+                  isPlaying
+                      ? MockLocationService().stopFakeLocation()
+                      : MockLocationService().fakeLocation();
                 }
-              });
-            },
-            icon: const Icon(Icons.remove),
-            color: Colors.red,
-            iconSize: 20.0,
+
+                setState(() {
+                  isPlaying = !isPlaying; // Toggle the isPlaying state.
+                });
+              },
+              icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+              // Change icon based on isPlaying.
+              color: Colors.white,
+              iconSize: screenHight * 0.028,
+            ),
           ),
-        ),
-      ],
-      if (showPointsType && isMoving) ...[
-        Container(
-          height: 39,
-          width: 39,
-          margin: const EdgeInsets.only(top: 55.0, left: 52.5),
-          decoration: BoxDecoration(
-            color: isBeginning ? Colors.black : Colors.white,
-            borderRadius: BorderRadius.circular(15.0),
-            border: Border.all(color: Colors.grey, width: 1.5),
+        ],
+        if (isMoving && currentPoint != null) ...[
+          // UI button to toggle showing point types when the user selects a moving track.
+          Container(
+            height: screenHight * 0.05,
+            width: screenWidth * 0.11,
+            margin: EdgeInsets.only(
+                top: screenHight * 0.84, left: screenWidth * 0.25),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(100.0),
+              border: Border.all(color: Colors.grey, width: 1.5),
+            ),
+            child: IconButton(
+              onPressed: () => _removeLastPoint(),
+              icon: const Icon(Icons.remove),
+              color: Colors.red.shade800,
+              iconSize: screenHight * 0.028,
+            ),
           ),
-          child: IconButton(
-            onPressed: () {
-              setState(() {
-                isBeginning = true;
-                initialLatLng = LatLng(lat, lng);
-              });
-            },
-            icon: const Icon(Icons.start),
-            color: isBeginning ? Colors.green : Colors.deepPurple,
-            iconSize: 20.0,
+          Container(
+            height: screenHight * 0.05,
+            width: screenWidth * 0.11,
+            margin: EdgeInsets.only(
+                top: screenHight * 0.84, left: screenWidth * 0.64),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(100.0),
+              border: Border.all(color: Colors.grey, width: 1.5),
+            ),
+            child: IconButton(
+              alignment: Alignment.topLeft,
+              onPressed: () {
+                setState(() {
+                  _clearMapData();
+                });
+              },
+              icon: const Icon(Icons.highlight_remove),
+              color: Colors.red.shade800,
+              iconSize: screenHight * 0.028,
+            ),
           ),
-        ),
-        Container(
-          height: 39,
-          width: 39,
-          margin: const EdgeInsets.only(top: 55.0, left: 97.5),
-          decoration: BoxDecoration(
-            color: isEnd ? Colors.black : Colors.white,
-            borderRadius: BorderRadius.circular(15.0),
-            border: Border.all(color: Colors.grey, width: 1.5),
-          ),
-          child: IconButton(
-            onPressed: () {
-              setState(() {
-                isEnd = true;
-                destinationLatLng = LatLng(lat, lng);
-              });
-            },
-            icon: const Icon(Icons.flag),
-            color: isEnd ? Colors.red : Colors.deepPurple,
-            iconSize: 20.0,
-          ),
-        ),
-      ]
-    ]);
+          // UI button to toggle between car and walking speed.
+        ],
+      ]);
+    });
   }
 
+  // Method to handle map taps and add a marker at the tapped location.
   void handleMapTap(LatLng tappedPoint) {
     setState(() {
-      _markers.removeWhere((marker) => marker.markerId.value == 'user');
-      _markers.clear();
       lat = tappedPoint.latitude;
       lng = tappedPoint.longitude;
-      if (!isMoving) {
-        singlePoint = LatLng(lat, lng);
+      currentPoint = LatLng(lat, lng);
+      if (!Provider.of<SharedState>(context, listen: false).isMoving) {
+        polylines.clear();
+        markers.removeWhere((marker) => marker.markerId.value == 'user');
+        markers.clear();
+        markers.add(
+          Marker(
+            markerId: MarkerId(tappedPoint.toString()),
+            position: tappedPoint, // Use the custom icon if needed
+          ),
+        );
+      } else {
+        polylineCoordinates.add(LatLng(lat, lng));
+        markers.add(
+          Marker(
+            markerId: MarkerId(tappedPoint.toString()),
+            position: tappedPoint, // Use the custom icon if needed
+          ),
+        );
+        // Calculating the distance between the start and the end positions with a straight path,
+        // without considering any route
+        if (previousPoint != null) {
+          drawLine(previousPoint!, tappedPoint);
+        }
+        previousPoint = tappedPoint;
       }
-      _markers.add(
-        Marker(
-          markerId: MarkerId(tappedPoint.toString()),
-          position: tappedPoint, // Use the custom icon if needed
-          //icon: blueMarkerIcon,
-        ),
-      );
+    });
+  }
+
+  void drawLine(LatLng startPoint, LatLng endPoint) {
+    final polyline = Polyline(
+      polylineId: PolylineId('${startPoint.toString()}_${endPoint.toString()}'),
+      visible: true,
+      points: [startPoint, endPoint],
+      color: Colors.green.shade700,
+      width: 3, // Customize the width of the line
+    );
+
+    setState(() {
+      polylines.add(polyline);
     });
   }
 
@@ -310,46 +292,17 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
     controller.moveCamera(CameraUpdate.newCameraPosition(myPosition));
   }
 
-  _setMapPins(List<LatLng> markersLocation) {
-    _markers.clear();
-    setState(() {
-      for (var markerLocation in markersLocation) {
-        _markers.add(Marker(
-          markerId: MarkerId(markerLocation.toString()),
-          position: markerLocation,
-          icon: customIcon,
-        ));
-      }
-    });
-  }
-
+  // Method to set the map style based on dark mode.
   Future _setMapStyle() async {
     final controller = await _controller.future;
     if (mapDarkMode) {
-      controller.setMapStyle(_darkMapStyle);
+      controller.setMapStyle(_darkMapStyle); // Apply dark map style.
     } else {
-      controller.setMapStyle(_lightMapStyle);
+      controller.setMapStyle(_lightMapStyle); // Apply light map style.
     }
   }
 
-  /*
-  _setPolyLine() async {
-    final result = await MapRepository()
-        .getRouteCoordinates(initialLatLng, destinationLatLng);
-    final route = result.data["routes"][0]["overview_polyline"]["points"];
-    setState(
-      () {
-        _polyline.add(Polyline(
-            polylineId: const PolylineId("tripRoute"),
-            width: 3,
-            geodesic: true,
-            points: MapUtils.convertToLatLng(MapUtils.decodePoly(route)),
-            color: Theme.of(context).primaryColor));
-      },
-    );
-  }
-  */
-
+  // Method to update the user's location marker on the map.
   _updateUserMarker(LocationData currentLocation) {
     if (AppBloc.liveLocationCubit.currentLocationService.serviceEnabled) {
       AppBloc.liveLocationCubit.closeService();
@@ -357,14 +310,14 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
     }
 
     if (currentLocation.latitude != null && currentLocation.longitude != null) {
-      _markers.removeWhere((marker) => marker.markerId.value == 'user');
-      _markers.clear();
+      markers.removeWhere((marker) => marker.markerId.value == 'user');
+      markers.clear();
       lat = currentLocation.latitude!;
       lng = currentLocation.longitude!;
       _moveCamera();
       setState(
         () {
-          _markers.add(
+          markers.add(
             Marker(
               markerId: const MarkerId('user'),
               position:
@@ -374,5 +327,27 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
         },
       );
     }
+  }
+
+  void _clearMapData() {
+    markers.clear();
+    polylines.clear();
+    polylineCoordinates.clear();
+    previousPoint = null;
+    currentPoint = null;
+  }
+
+  void _removeLastPoint() {
+    setState(() {
+      markers.remove(markers.last);
+      polylineCoordinates.removeLast();
+      if (polylines.isNotEmpty) {
+        polylines.remove(polylines.last);
+      }
+      currentPoint =
+          polylineCoordinates.isNotEmpty ? polylineCoordinates.last : null;
+      previousPoint =
+          polylineCoordinates.isNotEmpty ? polylineCoordinates.last : null;
+    });
   }
 }

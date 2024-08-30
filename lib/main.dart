@@ -1,68 +1,26 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'widgets/google_maps_widget.dart';
 import 'app_bloc.dart';
 import 'src/drawer.dart';
 import 'src/menu.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:async';
+import 'provider/shared_state.dart';
+import 'package:provider/provider.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await initializeService();
-  runApp(const MyApp());
-}
-
-Future<void> initializeService() async {
-  final service = FlutterBackgroundService();
-  await service.configure(
-    androidConfiguration: AndroidConfiguration(
-      onStart: onStart,
-      autoStart: true,
-      isForegroundMode: true,
-    ),
-    iosConfiguration: IosConfiguration(
-      onForeground: onStart,
-      onBackground: onIosBackground,
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => SharedState(),
+      child: const MyApp(),
     ),
   );
-  service.startService();
 }
 
-@pragma('vm:entry-point')
-void onStart(ServiceInstance service) async {
-  DartPluginRegistrant.ensureInitialized();
-
-  service.on('stopService').listen((event) {
-    service.stopSelf();
-  });
-
-  Timer.periodic(const Duration(seconds: 5), (timer) async {
-    service.invoke('update', {
-      "current_date": DateTime.now().toIso8601String(),
-    });
-
-    // Restart your mock location service
-    AppBloc.liveLocationCubit.startMockService(
-      mockLocation:
-          LatLng(GoogleMapsWidgetState.lat, GoogleMapsWidgetState.lng),
-    );
-  });
-}
-
-@pragma('vm:entry-point')
-bool onIosBackground(ServiceInstance service) {
-  WidgetsFlutterBinding.ensureInitialized();
-  return true;
-}
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
+  // This widget is the root of your application.
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -71,21 +29,21 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: AppBloc.providers,
+      providers: AppBloc.providers, // Setting up Bloc providers for the entire app.
       child: MaterialApp(
-        title: 'Google Maps Training',
+        title: 'GPS Changer', // The title of the application.
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          primarySwatch: Colors.blue, // Applying a blue color theme.
         ),
-        debugShowCheckedModeBanner: false,
-        home: const MainScreen(),
+        debugShowCheckedModeBanner: false, // Disabling the debug banner.
+        home: const MainScreen(), // Setting the MainScreen widget as the home screen.
       ),
     );
   }
 
   @override
   void dispose() {
-    AppBloc.dispose();
+    AppBloc.dispose(); // Disposing of Bloc resources when the app is closed.
     super.dispose();
   }
 }
@@ -94,96 +52,22 @@ class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<MainScreen> createState() => _MainScreenState(); // Creating the state object for MainScreen.
 }
 
-class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
-  bool isPlaying = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _loadState();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  void _loadState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isPlaying = prefs.getBool('isPlaying') ?? false;
-    });
-  }
-
-  void _saveState() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isPlaying', isPlaying);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      // App is in the background or not focused
-      if (isPlaying) {
-        final service = FlutterBackgroundService();
-        service.startService();
-      }
-    } else if (state == AppLifecycleState.resumed) {
-      // App is back to foreground
-      if (isPlaying) {
-        AppBloc.liveLocationCubit.startMockService(
-          mockLocation: LatLng(
-            GoogleMapsWidgetState.lat,
-            GoogleMapsWidgetState.lng,
-          ),
-        );
-      }
-    }
-  }
+class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GPS Changer'),
+        title: const Text('GPS Changer'), // Title in the AppBar.
         actions: const [
-          Menu(),
+          Menu(), // Custom menu in the AppBar.
         ],
       ),
-      drawer: const MyDrawer(),
-      // Pass the state here
-      body: const GoogleMapsWidget(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (isPlaying) {
-            AppBloc.liveLocationCubit.closeMockService();
-          } else {
-            AppBloc.liveLocationCubit.startMockService(
-              mockLocation: LatLng(
-                GoogleMapsWidgetState.lat,
-                GoogleMapsWidgetState.lng,
-              ),
-            );
-          }
-
-          setState(() {
-            isPlaying = !isPlaying;
-          });
-
-          _saveState();
-        },
-        backgroundColor: isPlaying ? Colors.red : Colors.green,
-        foregroundColor: Colors.white,
-        shape: const CircleBorder(),
-        child: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      drawer: const MyDrawer(), // Custom drawer for navigation.
+      body: const GoogleMapsWidget(), // The main content displaying the Google Map.
     );
   }
 }

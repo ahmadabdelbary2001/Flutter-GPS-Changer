@@ -16,11 +16,11 @@
     <application
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:label="google_maps">
+        android:label="GPS Changer">
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCuaIKR0e14Zr6fyRq3H1Q1HpxbjVyb6Yc" />
+            android:value="AIzaSyCvgKFDyXu94n1g2uJuQwZg7TfMEZVhf60" />
 
         <activity
             android:name=".MainActivity"

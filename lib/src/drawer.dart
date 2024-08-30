@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../widgets/google_maps_widget.dart';
 
+/// A Drawer widget that provides navigation options for the GPS Changer app.
 class MyDrawer extends StatefulWidget {
   const MyDrawer({super.key});
 
@@ -25,25 +26,21 @@ class _MyDrawerState extends State<MyDrawer> {
               style: TextStyle(color: Colors.white, fontSize: 24),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.search),
-            title: const Text('Search'),
-            onTap: () {
-              _showSearchDialog(context);
-            },
-          ),
+          // ListTile for Go to specific coordinates
           ListTile(
             leading: const Icon(Icons.location_on),
             title: const Text('Go to'),
             onTap: () {
-              _showLocationDialog(context);
+              _showLocationDialog(
+                  context); // Show location input dialog when tapped
             },
           ),
+          // ListTile for Map Type option (currently no functionality)
           ListTile(
-            leading: const Icon(Icons.speed),
-            title: const Text('Select Speed'),
+            leading: const Icon(Icons.map_outlined),
+            title: const Text('Map Type'),
             onTap: () {
-              // Handle the FAQ action
+              // Future implementation for map type change
             },
           ),
         ],
@@ -51,40 +48,7 @@ class _MyDrawerState extends State<MyDrawer> {
     );
   }
 
-  void _showSearchDialog(BuildContext context) {
-    TextEditingController controller = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Search for'),
-          content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.text,
-            decoration: const InputDecoration(hintText: 'Street or City'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('CANCEL'),
-            ),
-            TextButton(
-              onPressed: () async {
-                String input = controller.text;
-                Navigator.of(context).pop(); // Close the dialog
-                Navigator.of(context).pop(); // Close the drawer
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+  /// Shows a dialog for entering specific coordinates to navigate to.
   void _showLocationDialog(BuildContext context) {
     TextEditingController controller = TextEditingController();
 
@@ -111,8 +75,9 @@ class _MyDrawerState extends State<MyDrawer> {
                 final requiredLocation = input.split(",");
                 print('Location input: $requiredLocation');
                 Navigator.of(context).pop(); // Close the dialog
-                Navigator.of(context).pop(); //Close the drawer
+                Navigator.of(context).pop(); // Close the drawer
                 setState(() {
+                  // Handle the map tap with the provided coordinates
                   GoogleMapsWidgetState().handleMapTap(LatLng(
                       double.parse(requiredLocation[0]),
                       double.parse(requiredLocation[1])));
