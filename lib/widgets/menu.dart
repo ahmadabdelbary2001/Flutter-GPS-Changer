@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../provider/shared_state.dart';
-import '../widgets/google_maps_widget.dart';
 import 'package:provider/provider.dart';
 
 

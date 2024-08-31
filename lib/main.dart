@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'widgets/google_maps_widget.dart';
 import 'app_bloc.dart';
-import 'src/drawer.dart';
-import 'src/menu.dart';
+import 'widgets/menu.dart';
 import 'provider/shared_state.dart';
 import 'package:provider/provider.dart';
 
@@ -36,7 +35,15 @@ class _MyAppState extends State<MyApp> {
           primarySwatch: Colors.blue, // Applying a blue color theme.
         ),
         debugShowCheckedModeBanner: false, // Disabling the debug banner.
-        home: const MainScreen(), // Setting the MainScreen widget as the home screen.
+        home: Scaffold(
+          appBar: AppBar(
+            title: const Text('GPS Changer'), // Title in the AppBar.
+            actions: const [
+              Menu(), // Custom menu in the AppBar.
+            ],
+          ),
+          body: const GoogleMapsWidget(), // The main content displaying the Google Map.
+        ),
       ),
     );
   }
@@ -45,29 +52,5 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     AppBloc.dispose(); // Disposing of Bloc resources when the app is closed.
     super.dispose();
-  }
-}
-
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
-
-  @override
-  State<MainScreen> createState() => _MainScreenState(); // Creating the state object for MainScreen.
-}
-
-class _MainScreenState extends State<MainScreen> {
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('GPS Changer'), // Title in the AppBar.
-        actions: const [
-          Menu(), // Custom menu in the AppBar.
-        ],
-      ),
-      drawer: const MyDrawer(), // Custom drawer for navigation.
-      body: const GoogleMapsWidget(), // The main content displaying the Google Map.
-    );
   }
 }

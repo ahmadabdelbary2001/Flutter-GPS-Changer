@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps/route.dart';
 import 'package:provider/provider.dart';
-import '../mock/mock_location_service.dart';
+import '../services/mock_location_service.dart';
 import '../provider/shared_state.dart';
 
 class RouteSettingsDialog extends StatefulWidget {
@@ -10,6 +11,7 @@ class RouteSettingsDialog extends StatefulWidget {
   final Function(double) onInaccuracyChanged;
   final String? loopMode;
   final ValueChanged<String?> onLoopModeChanged;
+  final MyRoute route;
 
   const RouteSettingsDialog({
     super.key,
@@ -19,6 +21,7 @@ class RouteSettingsDialog extends StatefulWidget {
     required this.onInaccuracyChanged,
     required this.loopMode,
     required this.onLoopModeChanged,
+    required this.route,
   });
 
   @override
@@ -29,6 +32,7 @@ class RouteSettingsDialogState extends State<RouteSettingsDialog> {
   late double speed;
   late double inaccuracy;
   late String? selectedLoopMode;
+  late MyRoute route;
   bool isWalking = true;
   bool isCycling = false;
   bool isDriving = false;
@@ -39,6 +43,7 @@ class RouteSettingsDialogState extends State<RouteSettingsDialog> {
     speed = widget.initialSpeed;
     inaccuracy = widget.initialInaccuracy;
     selectedLoopMode = widget.loopMode;  // Initialize with the current loop mode
+    route = widget.route;
   }
 
   void _updateIconState(double newSpeed) {
@@ -175,7 +180,7 @@ class RouteSettingsDialogState extends State<RouteSettingsDialog> {
             sharedState.setSpeed(speed);
             sharedState.setInaccuracy(inaccuracy);
             sharedState.setLoopMode(selectedLoopMode!);
-            MockLocationService().fakeMovingLocation(context);
+            MockLocationService().fakeMovingLocation(context, route);
             Navigator.of(context).pop();
           },
           child: const Text('PLAY'),
@@ -185,7 +190,7 @@ class RouteSettingsDialogState extends State<RouteSettingsDialog> {
   }
 }
 
-void showRouteSettings(BuildContext context) {
+void showRouteSettings(BuildContext context, MyRoute route) {
   double initialSpeed = 0.5; // Default speed
   double initialInaccuracy = 0.0; // Default inaccuracy
   String? loopMode = 'stop'; // Default loop mode
@@ -206,6 +211,7 @@ void showRouteSettings(BuildContext context) {
         onLoopModeChanged: (newMode) {
           loopMode = newMode;
         },
+        route: route,
       );
     },
   );

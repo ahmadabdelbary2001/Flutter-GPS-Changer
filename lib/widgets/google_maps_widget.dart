@@ -7,7 +7,8 @@ import '../app_bloc.dart';
 import '../controller/live_location_cubit.dart';
 import 'package:location/location.dart';
 import 'package:provider/provider.dart';
-import '../mock/mock_location_service.dart';
+import '../route.dart';
+import '../services/mock_location_service.dart';
 import '../provider/shared_state.dart';
 import 'route_settings_dialog.dart';
 
@@ -22,15 +23,15 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
   final Completer<GoogleMapController> _controller =
       Completer(); // Controller for Google Maps.
 
-  static double lat = 35.0; // Initial latitude value.
-  static double lng = 39.0; // Initial longitude value.
+  late double lat; // Initial latitude value.
+  late double lng; // Initial longitude value.
   LatLng? currentPoint;
   LatLng? previousPoint;
 
-  static List<LatLng> polylineCoordinates =
-      []; // List to hold coordinates for the polyline.
+  MyRoute route = MyRoute(coordinates: []);
+
   final Set<Marker> markers = <Marker>{}; // Set to hold map markers.
-  final Set<Polyline> polylines = {}; // Set to hold polylines for routes.
+  static Set<Polyline> polylines = {}; // Set to hold polylines for routes.
 
   bool mapDarkMode = false; // Flag to track dark mode for the map.
   bool isChanged = false;
@@ -152,7 +153,7 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
             iconSize: screenHight * 0.0225,
           ),
         ),
-        if (currentPoint != null) ...[
+        if ((!isMoving && currentPoint != null) || (isMoving && polylines.isNotEmpty)) ...[
           Container(
             height: screenHight * 0.065,
             width: screenWidth * 0.14,
@@ -169,12 +170,12 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
                 if (isMoving) {
                   isPlaying
                     ? MockLocationService().stopFakeLocation()
-                    : showRouteSettings(context);
+                    : showRouteSettings(context, route);
                 } else {
                   // Toggle between starting and stopping the location faking.
                   isPlaying
                       ? MockLocationService().stopFakeLocation()
-                      : MockLocationService().fakeLocation();
+                      : MockLocationService().fakeLocation(currentPoint!);
                 }
 
                 setState(() {
@@ -252,7 +253,7 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
           ),
         );
       } else {
-        polylineCoordinates.add(LatLng(lat, lng));
+        route.add(LatLng(lat, lng));
         markers.add(
           Marker(
             markerId: MarkerId(tappedPoint.toString()),
@@ -332,7 +333,7 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
   void _clearMapData() {
     markers.clear();
     polylines.clear();
-    polylineCoordinates.clear();
+    route.clear();
     previousPoint = null;
     currentPoint = null;
   }
@@ -340,14 +341,12 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
   void _removeLastPoint() {
     setState(() {
       markers.remove(markers.last);
-      polylineCoordinates.removeLast();
+      route.removeLast();
+      currentPoint = polylines.isNotEmpty ? route.last : null;
+      previousPoint = polylines.isNotEmpty ? route.last : null;
       if (polylines.isNotEmpty) {
         polylines.remove(polylines.last);
       }
-      currentPoint =
-          polylineCoordinates.isNotEmpty ? polylineCoordinates.last : null;
-      previousPoint =
-          polylineCoordinates.isNotEmpty ? polylineCoordinates.last : null;
     });
   }
 }
