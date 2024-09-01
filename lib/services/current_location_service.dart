@@ -1,5 +1,5 @@
 import 'dart:async';
-import '../app_bloc.dart';
+import '../provider/app_bloc.dart';
 import 'package:location/location.dart';
 
 /// This service uses the `location` package to check permissions,

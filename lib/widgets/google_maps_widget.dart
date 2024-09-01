@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../app_bloc.dart';
 import '../controller/live_location_cubit.dart';
 import 'package:location/location.dart';
 import 'package:provider/provider.dart';
-import '../route.dart';
+import '../controller/route_controller.dart';
+import '../provider/app_bloc.dart';
 import '../services/mock_location_service.dart';
 import '../provider/shared_state.dart';
 import 'route_settings_dialog.dart';
@@ -21,17 +21,17 @@ class GoogleMapsWidget extends StatefulWidget {
 
 class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
   final Completer<GoogleMapController> _controller =
-      Completer(); // Controller for Google Maps.
+  Completer(); // Controller for Google Maps.
 
   late double lat; // Initial latitude value.
   late double lng; // Initial longitude value.
   LatLng? currentPoint;
   LatLng? previousPoint;
 
-  MyRoute route = MyRoute(coordinates: []);
+  RouteController route = RouteController(coordinates: []);
 
   final Set<Marker> markers = <Marker>{}; // Set to hold map markers.
-  static Set<Polyline> polylines = {}; // Set to hold polylines for routes.
+  Set<Polyline> polylines = {}; // Set to hold polylines for routes.
 
   bool mapDarkMode = false; // Flag to track dark mode for the map.
   bool isChanged = false;
@@ -169,8 +169,8 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
               onPressed: () {
                 if (isMoving) {
                   isPlaying
-                    ? MockLocationService().stopFakeLocation()
-                    : showRouteSettings(context, route);
+                      ? MockLocationService().stopFakeLocation()
+                      : showRouteSettings(context, route);
                 } else {
                   // Toggle between starting and stopping the location faking.
                   isPlaying
@@ -317,12 +317,12 @@ class GoogleMapsWidgetState extends State<GoogleMapsWidget> {
       lng = currentLocation.longitude!;
       _moveCamera();
       setState(
-        () {
+            () {
           markers.add(
             Marker(
               markerId: const MarkerId('user'),
               position:
-                  LatLng(currentLocation.latitude!, currentLocation.longitude!),
+              LatLng(currentLocation.latitude!, currentLocation.longitude!),
             ),
           );
         },

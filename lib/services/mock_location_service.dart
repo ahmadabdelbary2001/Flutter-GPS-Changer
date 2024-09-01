@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../provider/shared_state.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
-import '../route.dart';
+import '../controller/route_controller.dart';
 
 class MockLocationService {
   static const platform = MethodChannel(
@@ -35,7 +35,7 @@ class MockLocationService {
     }
   }
 
-  Future<void> fakeMovingLocation(BuildContext context, MyRoute route) async {
+  Future<void> fakeMovingLocation(BuildContext context, RouteController route) async {
     try {
       final sharedState = Provider.of<SharedState>(context, listen: false);
       double speed = sharedState.speed;

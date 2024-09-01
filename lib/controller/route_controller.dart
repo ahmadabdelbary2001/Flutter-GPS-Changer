@@ -1,10 +1,10 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
 
-class MyRoute {
+class RouteController {
   final List<LatLng> coordinates;
 
-  MyRoute({required this.coordinates});
+  RouteController({required this.coordinates});
 
   get isNotEmpty => coordinates.isNotEmpty;
   get isEmpty => coordinates.isEmpty;

@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'controller/live_location_cubit.dart';
+import '../controller/live_location_cubit.dart';
 
 /// Centralized Bloc management class for the application.
 class AppBloc {
