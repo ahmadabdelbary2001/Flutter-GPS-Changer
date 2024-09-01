@@ -186,12 +186,12 @@ GPS-Changer/
 
 ### في android/app/src/main/AndroidManifest.xml داخل وسم Application، أضف مفتاحك
 
-
+```
 <manifest ...
   <application ...
     <meta-data android:name="com.google.android.geo.API_KEY"
                android:value="YOUR KEY HERE"/>
-
+```
 ### البرمجيات والأدوات:
    - Flutter SDK: إصدار 3.0.0 أو أعلى.
    - Dart SDK: إصدار 2.17.0 أو أعلى.
