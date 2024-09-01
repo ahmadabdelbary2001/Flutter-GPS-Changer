@@ -1,17 +1,17 @@
 &#x202b;
 
-# مشروع إخفاء الموقع الحقيقي للهاتف الذكي بالاعتماد على الهواتف الوهمية
+# مشروع Dummy-Based smart phone Location Anonymization
 
 ## وصف المشروع
 
-يهدف هذا المشروع إلى تطوير تطبيق موبايل متكامل يوفر ميزات متقدمة للتعامل مع الموقع الجغرافي، بما في ذلك تزييف الموقع، وعرض الخرائط التفاعلية، وإدارة المسارات الجغرافية. يستخدم التطبيق إطار عمل Flutter لتوفير تجربة مستخدم سلسة ومتعددة المنصات، مع تكامل عميق مع نظام Android من خلال استخدام لغة Kotlin للتعامل مع وظائف النظام الأساسية.
+يهدف هذا المشروع إلى تطوير تطبيق موبايل متكامل يوفر ميزات متقدمة للتعامل مع الموقع الجغرافي، بما في ذلك تزييف الموقع، وعرض الخرائط التفاعلية، وإدارة المسارات الجغرافية. يستخدم التطبيق إطار عمل Flutter لتوفير تجربة مستخدم سلسة ومتعددة المنصات، مع تكامل عميق مع نظام Android من خلال استخدام لغة Kotlin للتعامل مع خدمة تزييف الموقع.
+
 
 ## هيكلية المشروع
 
-المشروع مؤلف من مجلد واحد وذر الملف هو *GPS-Changer*
-
+المشروع هو كتلة وحيدة والمجلد الرئيسي هو *GPS-Changer*
 ```
-project_root/
+GPS-Changer/
 │
 ├── android/
 │   ├── app/
@@ -36,8 +36,8 @@ project_root/
 │   │   ├── menu.dart
 │   │   └── route_settings_dialog.dart
 │   └── provider/
-│   │   ├── app_bloc.dart
-│   │   └── shared_state.dart
+│       ├── app_bloc.dart
+│       └── shared_state.dart
 │
 ├── assets/
 │   └── ...
@@ -49,71 +49,55 @@ project_root/
 └── README.md
 ```
 
-### تفاصيل الملفات والمجلدات في قسم إنشاء النموذج
+### تفاصيل الملفات والمجلدات
 
 | الملف/المجلد         | الوصف                                                  |
-| -------------------- | ------------------------------------------------------ |
-| `creating_model.py`  | الملف الرئيسي لإنشاء النموذج وتدريبه.                  |
-| `data.py`            | الملف الذي تم من خلاله إنشاء بيانات التدريب.           |
-| `SeqModelWrapper.py` | الملف الذي يحوي تغليف النموذج المختار.                 |
-| `util.py`            | ملف مساعد يحوي توابع معالجة البيانات.                  |
-| `config/`            | يحتوي على ملفات إعدادات النماذج مثل المعاملات الفائقة. |
-| `resources/`         | يحوي على بيانات التدريب.                               |
+| -------------------- | ------------------------------------------------------------- |
+| lib                | يحتوي على الكود الرئيسي لتطبيق Flutter بما في ذلك واجهات المستخدم، المتحكمات وإدارة الحالة والخدمات.   |
+| assets             | يخزن الصور، أنماط الخرائط، والموارد الثابتة الأخرى المستخدمة في التطبيق.            |
+| test               | يحتوي على اختبارات الوحدة والويدجيت للتطبيق.                               |
+| android            | يحتوي على الكود الأصلي الخاص بنظام Android الذي يتكامل مع Flutter.         |
 
-### الملفات التي تم إنشاؤها في المنصة
+### هيكل مجلد android
 
-هذه الملفات هي ملفات ال extension التي تم إنشاءها.
+| الملف/المجلد         | الوصف                                                  |
+| ------------------------------------------------------------- | ----------------------------------------- |
+| app/src/main/kotlin/com/example/google_maps/MainActivity.kt | يحتوي على الكود الخاص بالتفاعل مع نظام Android لإدارة الموقع الوهمي عبر Flutter. |
 
-```
-├── admin/
-│  ├── controller/extension/module/suggests.php
-│  ├── language/en-gb/extension/module/suggests.php
-│  └── view/template/extension/module/suggests.twig
-├── catalog/
-│  ├── controller/extension/module/suggests.php
-│  ├── language/en-gb/extension/module/suggests.php
-│  ├── model/extension/module/suggests.php
-│  └── view/theme/default/template/extension/module/suggests.twig
-```
+### هيكل مجلد lib
 
-## بيانات التدريب
+| الملف/المجلد         | الوصف                                                  |
+| -------------------- | ------------------------------------------------------------- |
+| main.dart          | نقطة الدخول الرئيسية للتطبيق.                                          |
+| controller         | يحتوي على المتحكمات.                                              |
+| provider           | إدارة الحالة المستخدم في جميع أنحاء التطبيق.                                |
+| widgets            | عناصر واجهة المستخدم تستخدم في جميع أنحاء التطبيق.                         |
+| services           | الخدمات المسؤولة عن معالجة الموقع الجغرافي وتزييف الموقع.                     |
 
-بيانات التدريب تتكون من ملفين نصيين json
-
-الملف الأول يحوي معلومات عامة عن المنتجات التي يوفرها المتجر الالكتروني ، مثال عنها :
-
-```
-{"ItemID": '1005', "Name": "Gaming Console", "Category": "Electronics", "CategoryID": '2001', "Subcategory": "Gaming", "SubcategoryID": '3005'}
-{"ItemID": '1006', "Name": "DSLR Camera", "Category": "Electronics", "CategoryID": '2001', "Subcategory": "Cameras", "SubcategoryID": '3006'}
-{"ItemID": '1007', "Name": "Bluetooth Speaker", "Category": "Electronics", "CategoryID": '2001', "Subcategory": "Audio", "SubcategoryID": '3004'}
-{"ItemID": '1008', "Name": "Tablet", "Category": "Electronics", "CategoryID": '2001', "Subcategory": "Mobile Devices", "SubcategoryID": '3007'}
-```
-
-الملف الثاني يحوي بيانات تفاعل المستخدمين مع المنتجات في الموقع، مثال عنها:
-
-```
-{"UserID":"user_1","ItemID":1200,"ItemName":"Diecast Car Set","Category":"Toys and Games","CategoryID":2010,"InteractionType":"view","Timestamp":"2020-06-04 10:18:14"}
-{"UserID":"user_1","ItemID":1195,"ItemName":"Toy Helicopter","Category":"Toys and Games","CategoryID":2010,"InteractionType":"view","Timestamp":"2020-06-02 07:47:14"}
-{"UserID":"user_1","ItemID":1195,"ItemName":"Toy Helicopter","Category":"Toys and Games","CategoryID":2010,"InteractionType":"add to cart","Timestamp":"2020-06-02 08:00:14"}
-{"UserID":"user_1","ItemID":1195,"ItemName":"Toy Helicopter","Category":"Toys and Games","CategoryID":2010,"InteractionType":"review 2","Timestamp":"2020-06-02 08:15:14"}
-```
-
-## النموذج المدرب
-
-تم الحصول على النموذج المدرب من مكتبة [Microsoft Recommenders ](https://github.com/recommenders-team/recommenders).
-
-وتم استخدام نموذج [SLi_Rec](https://github.com/recommenders-team/recommenders/blob/main/examples/00_quick_start/sequential_recsys_amazondataset.ipynb).
 
 ## تشغيل المشروع
 
-نحتاج أولا أن نقوم بتدريب النموذج او تحميله في حال تم تدريبه مسبقا، نقوم بذلك عن طريق تنفيذ الملف _creating_model.py_.
+### إضافة خريطة إلى التطبيق
+احصل على مفتاح واجهة برمجة التطبيقات على https://cloud.google.com/maps-platform/.
 
-فيتم به معالجة بيانات التدريب وإنشاء نموذج وتسجيله في _MLflow_، كما يتم حفظ النموذج المجرب لنتمكن من تحميله لاحقا دون إعادة تدريبه.
+قم بتمكين SDK لخرائط Google لكل منصة.
+   - انتقل إلى وحدة تحكم مطوري Google.
+   - اختر المشروع الذي تريد تمكين خرائط Google عليه.
+   - حدد قائمة التنقل ثم حدد "خرائط Google".
+   - حدد "APIs" ضمن قائمة خرائط Google.
+   - لتمكين خرائط Google لنظام Android، حدد "SDK لخرائط Android" في قسم "APIs الإضافية"، ثم حدد "تمكين".
+   - تأكد من أن APIs التي قمت بتمكينها موجودة ضمن قسم "APIs الممكّنة".
 
-في الخطوة التالية نقوم بتشغيل النموذج وتخديمه باستخدام _MLflow_، عن طريق تنفيذ التعلمية التالية في منفذ الأوامر:
+### في android/app/src/main/AndroidManifest.xml داخل وسم Application، أضف مفتاحك
 
-```
-mlflow models serve -m SeqModel_with_wrapper --port 5000 --no-conda
-```
 
-وبذلك نستطيع الحصول على اقتراحات في المنصة باستخدام _REST API_.
+<manifest ...
+  <application ...
+    <meta-data android:name="com.google.android.geo.API_KEY"
+               android:value="YOUR KEY HERE"/>
+
+### البرمجيات والأدوات:
+   - Flutter SDK: إصدار 3.0.0 أو أعلى.
+   - Dart SDK: إصدار 2.17.0 أو أعلى.
+   - Android SDK: استهداف إصدار SDK 34، مع حد أدنى لإصدار SDK 21.
+   - Kotlin: إصدار 1.8.10.
