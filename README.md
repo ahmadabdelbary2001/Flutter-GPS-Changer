@@ -197,3 +197,7 @@ GPS-Changer/
    - Dart SDK: إصدار 2.17.0 أو أعلى.
    - Android SDK: استهداف إصدار SDK 34، مع حد أدنى لإصدار SDK 21.
    - Kotlin: إصدار 1.8.10.
+
+
+## الترخيص
+[MIT License](LICENSE)
